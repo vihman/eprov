@@ -103,10 +103,9 @@ def update_balena_certs(cert_filter, balena, device_name):
 
 def list_balena_devices(balena):
     devices = balena.models.device.get_all()
-    click.echo("device_name\tuuid\tip_address\tis_active\tos_variant")
+    click.echo("device_name, uuid, ip_address, api_heartbeat_state, is_active, os_variant")
     for d in devices:
-        click.echo(f"{d['device_name']}\t{d['uuid']}\t{d['ip_address']}\t{d['is_active']}\td['os_variant']")
-
+        click.echo(f"{d['device_name']}, {d['uuid']}, {d['ip_address']}, {d['api_heartbeat_state']}, {d['is_active']}, {d['os_variant']}")
         """
         d['cpu_usage']
         d['cpu_temp']
@@ -115,6 +114,3 @@ def list_balena_devices(balena):
         d['memory_usage']
         d['memory_total']
         """
-        # d['api_heartbeat_state']
-
-    # click.echo(devices)

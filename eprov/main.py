@@ -2,9 +2,11 @@ import logging
 
 import click
 
-from eprov.update import verify_device, verify_certs, update_balena_certs, verify_balena, list_balena_devices
+from eprov.aws import create_certs
+from eprov.balena import verify_device, verify_certs, update_balena_certs, verify_balena, list_balena_devices
 
 logger = logging.getLogger(__name__)
+
 
 @click.group(context_settings=dict(help_option_names=['-h', '--help']))
 def cli():
@@ -43,9 +45,28 @@ def ls(balena):
     list_balena_devices(balena)
 
 
-# TODO: make boto3 cert generate command
+@cli.command()
+@click.argument("device_name")
+@click.option("-p", "policy")
+def gen(device_name, policy):
+    """
+    Create private key.
+    Create CSR.
+    Let it be signed by AWS.
+    Get public key.
+    Save all to files in cert dir.
+
+    TODO: Create/Attach it to thing. Attach policy.
+    Add thing to AWS.
+    :param device_name:
+    :param policy:
+    :return:
+    """
+    create_certs(device_name)
+
+
 # TODO: add autocomplete from some contrib library
-# TODO: make balena devices ls
+# TODO: add aws things ls
 # TODO: progress bar
 
 
