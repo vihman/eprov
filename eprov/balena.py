@@ -92,12 +92,25 @@ def send_data(balena, device_name, env_vars):
             logger.info(f"Inserted Balena variable {key}")
 
 
-def update_balena_certs(cert_filter, balena, device_name):
+def update_balena_certs(cert_filter, balena, device_name, out):
     env_vars = load_certs(cert_filter)
     env_vars["AWS_IOT_HOST"] = find_endpoint()
     env_vars["AWS_IOT_PORT"] = "8883"
+    env_vars["AWS_MQTT_TOPIC"] = "sm/processed"
     env_vars["AWS_IOT_CLIENT_ID"] = find_client_id(cert_filter)
-    send_data(balena, device_name, env_vars)
+    env_vars["HUB_OUT_INTERVAL"] = "300"
+
+    env_vars["HUB_MODEL"] = "hydromast"
+    env_vars["HUB_STORE_ENABLE"] = "1"
+    env_vars["HUB_MQTT_ENABLE"] = "1"
+
+    if out:
+        print("STOUT requested:\n")
+        for key, val in env_vars.items():
+            print(f"{key}={val}")
+        print("\n")
+    else:
+        send_data(balena, device_name, env_vars)
     logger.info("Done.")
 
 
@@ -107,6 +120,7 @@ def list_balena_devices(balena):
     for d in devices:
         click.echo(f"{d['device_name']}, {d['uuid']}, {d['ip_address']}, {d['api_heartbeat_state']}, {d['is_active']}, {d['os_variant']}")
         """
+        Not used but existing:
         d['cpu_usage']
         d['cpu_temp']
         d['storage_usage']
