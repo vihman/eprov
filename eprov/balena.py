@@ -24,7 +24,7 @@ def list_files(path, sfilter=r''):
     return result
 
 
-def verify_certs(ctx, param, value):
+def get_cert_files(value):
     logger.debug("Verifying cert file existance and count.")
     entries = {x: 0 for x in CERT_CONSTANTS.keys()}
     files = list_files(CERTS_DIR, value)
@@ -55,7 +55,8 @@ def verify_device(ctx, param, value):
     return device.pop()
 
 
-def load_certs(files):
+def load_certs(device_name):
+    files = get_cert_files(device_name)
     result = {}
     cert_types = CERT_CONSTANTS.keys()
     for fname in files:
@@ -74,9 +75,9 @@ def find_endpoint():
     return endpoint["endpointAddress"]
 
 
-def find_client_id(filenames):
-    result, _ = os.path.splitext(os.path.basename(filenames.pop()))
-    return result
+# def find_client_id(filenames):
+#    result, _ = os.path.splitext(os.path.basename(filenames.pop()))
+#    return result
 
 
 def send_data(balena, device_name, env_vars):
@@ -92,17 +93,17 @@ def send_data(balena, device_name, env_vars):
             logger.info(f"Inserted Balena variable {key}")
 
 
-def update_balena_certs(cert_filter, balena, device_name, out):
-    env_vars = load_certs(cert_filter)
+def update_balena_certs(balena, device, out):
+    env_vars = load_certs(device["device_name"])
     env_vars["AWS_IOT_HOST"] = find_endpoint()
     env_vars["AWS_IOT_PORT"] = "8883"
     env_vars["AWS_MQTT_TOPIC"] = "sm/processed"
-    env_vars["AWS_IOT_CLIENT_ID"] = find_client_id(cert_filter)
+    env_vars["AWS_IOT_CLIENT_ID"] = device["device_name"]
     env_vars["HUB_OUT_INTERVAL"] = "300"
 
     env_vars["HUB_MODEL"] = "hydromast"
-    env_vars["HUB_STORE_ENABLE"] = "1"
-    env_vars["HUB_MQTT_ENABLE"] = "1"
+    env_vars["HUB_STORE_ENABLE"] = "0"
+    env_vars["HUB_MQTT_ENABLE"] = "0"
 
     if out:
         print("STOUT requested:\n")
@@ -110,7 +111,7 @@ def update_balena_certs(cert_filter, balena, device_name, out):
             print(f"{key}={val}")
         print("\n")
     else:
-        send_data(balena, device_name, env_vars)
+        send_data(balena, device, env_vars)
     logger.info("Done.")
 
 
