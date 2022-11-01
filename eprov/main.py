@@ -15,23 +15,23 @@ def cli():
 
 
 @cli.command()
-# @click.argument("cert_filter", callback=verify_certs)
-@click.argument("device_name", callback=verify_device)
+@click.argument("device_name")  # callback=verify_device
 @click.option("-b", "--balena", default="certs/API-KEY",
               help="Balena API auth token filename. Default is certs/API-KEY",
               callback=verify_balena, is_eager=True)
+@click.option("-f", "--fleet", help="Update fleet variables. Otherwise only device.", is_flag=True)
 @click.option("-o", "--out",  help="Don't send variables to Balena, just print them out.", is_flag=True)
-# @click.pass_context
-def up(device_name, balena, out):
+def up(device_name, balena, fleet, out):
     """Update or add  Balena device certs for AWS authentication to Balena Cloud using SDK.
     AWS access keys and variables are supposed to be setup in system (e.g. ~/.aws/credentials).
     Balena API login is done via Balena API key. Client id will be cert filename without extension.
 
     \b
-    DEVICE_NAME: Balena device name. This should have files with crt and pem extension.
+    DEVICE_NAME: Balena device name. This should have files with crt and pem extension. If fleet option is used,
+    then this should be fleet name.
     """
     update_balena_certs(balena=balena,
-                        device=device_name,
+                        device=device_name, fleet=fleet,
                         out=out)
 
 @cli.command()

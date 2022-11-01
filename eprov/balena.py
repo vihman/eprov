@@ -5,11 +5,11 @@ import re
 
 import boto3
 import click
-from balena import Balena
+from balena import Balena, exceptions
 
 CERTS_DIR = "certs"
 CERT_CONSTANTS = {'crt': "AWS_IOT_CERT", 'key': "AWS_IOT_KEY"}
-SERVICE_NAME = "main"
+
 logger = logging.getLogger(__name__)
 
 
@@ -48,6 +48,7 @@ def verify_balena(ctx, param, value):
 
 
 def verify_device(ctx, param, value):
+    # TODO: deprecated because it can be fleet.
     balena = ctx.params["balena"]
     device = balena.models.device.get_by_name(value)
     if not device:
@@ -80,38 +81,58 @@ def find_endpoint():
 #    return result
 
 
-def send_data(balena, device_name, env_vars):
-    dsev = balena.models.environment_variables.device_service_environment_variable
-    envs_on_device = dsev.get_all(device_name["uuid"])
-    existing_envs = {x[0]: x[1] for x in map(lambda x: (x['name'], x['id']), envs_on_device)}
+def send_data(balena, device_name, env_vars, fleet=False):
+    if fleet:
+        logger.info("Fleet variables update requested.")
+        ddev = balena.models.environment_variables.application
+        try:
+            fleet_object = balena.models.application.get(device_name)
+        except exceptions.RequestError as e:
+            # raise(e)
+            raise click.BadParameter("Cannot find fleet with such name.")
+        id = fleet_object["id"]
+    else:
+        logger.info("Device variables update requested.")
+        ddev = balena.models.environment_variables.device
+        device = balena.models.device.get_by_name(device_name)
+        if not device:
+            raise click.BadParameter("Cannot find device with such name.")
+        device = device.pop()
+        id = device["uuid"]
+
+    vars_in_environment = ddev.get_all(id)
+    existing_envs = {x[0]: x[1] for x in map(lambda x: (x['name'], x['id']), vars_in_environment)}
     for key, val in env_vars.items():
         if key in existing_envs.keys():
-            dsev.update(existing_envs[key], val)
+            ddev.update(existing_envs[key], val)
             logger.info(f"Updated Balena variable {key}.")
         else:
-            dsev.create(device_name["uuid"], SERVICE_NAME, key, val)
+            ddev.create(id, key, val)
             logger.info(f"Inserted Balena variable {key}")
 
 
-def update_balena_certs(balena, device, out):
-    env_vars = load_certs(device["device_name"])
-    env_vars["AWS_IOT_HOST"] = find_endpoint()
-    env_vars["AWS_IOT_PORT"] = "8883"
-    env_vars["AWS_MQTT_TOPIC"] = "sm/processed"
-    env_vars["AWS_IOT_CLIENT_ID"] = device["device_name"]
-    env_vars["HUB_OUT_INTERVAL"] = "300"
+def update_balena_certs(balena, device, fleet, out):
+    if fleet:
+        env_vars = {"AWS_IOT_HOST": find_endpoint()}
+        env_vars["HUB_STORE_ENABLE"] = "0"
+        env_vars["HUB_MQTT_ENABLE"] = "0"
+        env_vars["AWS_IOT_PORT"] = "8883"
+        env_vars["AWS_MQTT_TOPIC"] = "sm/processed"
+        env_vars["HUB_MODEL"] = "hydromast"
+        env_vars["HUB_OUT_INTERVAL"] = "600" # TODO: fleet variable? no?
 
-    env_vars["HUB_MODEL"] = "hydromast"
-    env_vars["HUB_STORE_ENABLE"] = "0"
-    env_vars["HUB_MQTT_ENABLE"] = "0"
+    else:
+        env_vars = load_certs(device)
+        env_vars["HUB_GROUP_ID"] = "1"
+        # env_vars["HUB_OUT_INTERVAL"] = "600"
 
     if out:
-        print("STOUT requested:\n")
+        print("STDOUT requested:\n")
         for key, val in env_vars.items():
             print(f"{key}={val}")
         print("\n")
     else:
-        send_data(balena, device, env_vars)
+        send_data(balena, device, env_vars, fleet)
     logger.info("Done.")
 
 
