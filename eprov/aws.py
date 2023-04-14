@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 
@@ -121,10 +122,11 @@ def create_policy_if_needed(client, policy_name):
 
 
 def attach_cert(client, thing_name, cert_arn, policy_name):
-    # We activate cert while creating, othervise:
-    # response = client.update_certificate(
-    #    certificateId=cert_arn,
-    #    newStatus='ACTIVE'
+    """NOTICE: We activate cert while creating, othervise:
+        response = client.update_certificate(
+        certificateId=cert_arn,
+        newStatus='ACTIVE'
+    """
     create_thing_if_needed(client, thing_name)
     create_policy_if_needed(client, policy_name)
     attach_thingprincipal(client, thing_name, cert_arn)
@@ -136,5 +138,15 @@ def manage_certificate(device_name, policy_name):
     boto_client = boto3.client('iot')
     cert_arn = create_certs_if_needed(boto_client, device_name)
     attach_cert(boto_client, device_name, cert_arn, policy_name)
+
+def generate_presigned_url(object, bucket, expires, get):
+    s3 = boto3.client('s3')
+    method = "put_object"
+    if get:
+        method = "get_object"
+    url = s3.generate_presigned_url(method, {'Bucket': bucket, 'Key': object}, ExpiresIn=expires)
+    click.echo(f"Presigned URL for bucket '{bucket} and object '{object}' {'DOWNLOADING' if get else 'UPLOADING'} "
+               f"that is expiring in {str(datetime.timedelta(seconds=expires))}:")
+    click.echo(url)
 
 # TODO use pathlib

@@ -47,8 +47,10 @@ def verify_balena(ctx, param, value):
     return balena
 
 
-def verify_device(ctx, param, value):
-    # TODO: deprecated because it can be fleet.
+def verify_device(ctx, value):
+    """
+    Was used for verification if device exists in balena. Deprecated because fleet can be used.
+    """
     balena = ctx.params["balena"]
     device = balena.models.device.get_by_name(value)
     if not device:
@@ -116,6 +118,7 @@ def update_balena_certs(balena, device, fleet, out):
         env_vars = {"AWS_IOT_HOST": find_endpoint()}
         env_vars["HUB_STORE_ENABLE"] = "0"
         env_vars["HUB_MQTT_ENABLE"] = "0"
+        env_vars["HUB_LORA_ENABLE"] = "0"
         env_vars["AWS_IOT_PORT"] = "8883"
         env_vars["AWS_MQTT_TOPIC"] = "sm/processed"
         env_vars["HUB_MODEL"] = "hydromast"
