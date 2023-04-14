@@ -1,4 +1,4 @@
-# Edge devices cert provisioner
+# Edge devices provisioner.
 Manage Balena Cloud devices access to AWS IoT.
 Create certificates and upload them to Balena cloud.
 ```
