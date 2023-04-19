@@ -64,7 +64,7 @@ def gen(device_name, policy):
 
 @cli.command()
 @click.argument("object")
-@click.option("-b", "bucket", help="Policy name to attach to Certificate. Will be created if not existing.",
+@click.option("-b", "bucket", help="Bucket name to store data.",
               default="hydromastdata")
 @click.option("-e", "expires", help="Signed URL expiration time in seconds.",
               default=60*60*24*3)
