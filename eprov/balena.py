@@ -126,7 +126,7 @@ def update_balena_certs(balena, device, fleet, out):
 
     else:
         env_vars = load_certs(device)
-        env_vars["HUB_GROUP_ID"] = "1"
+        # env_vars["HUB_GROUP_ID"] = "0"
         # env_vars["HUB_OUT_INTERVAL"] = "600"
 
     if out:
